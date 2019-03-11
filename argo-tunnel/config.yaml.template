@@ -1,0 +1,2 @@
+hostname: ${SERVICE_HOST}
+url: ${SERVICE_URL}
