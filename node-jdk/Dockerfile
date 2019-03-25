@@ -1,62 +1,69 @@
-FROM node:alpine
+FROM java:8-alpine
 
-ENV JAVA_VERSION=8 \
-    JAVA_UPDATE=202 \
-    JAVA_BUILD=08 \
-    JAVA_PATH=1961070e4c9b4e26a04e7f5a083f551e \
-    JAVA_HOME="/usr/lib/jvm/default-jvm"
+ENV NODE_VERSION 10.15.3
 
-RUN apk add --no-cache --virtual=build-dependencies wget ca-certificates unzip && \
-    cd "/tmp" && \
-    wget --header "Cookie: oraclelicense=accept-securebackup-cookie;" \
-        "http://download.oracle.com/otn-pub/java/jdk/${JAVA_VERSION}u${JAVA_UPDATE}-b${JAVA_BUILD}/${JAVA_PATH}/jdk-${JAVA_VERSION}u${JAVA_UPDATE}-linux-x64.tar.gz" && \
-    tar -xzf "jdk-${JAVA_VERSION}u${JAVA_UPDATE}-linux-x64.tar.gz" && \
-    mkdir -p "/usr/lib/jvm" && \
-    mv "/tmp/jdk1.${JAVA_VERSION}.0_${JAVA_UPDATE}" "/usr/lib/jvm/java-${JAVA_VERSION}-oracle" && \
-    ln -s "java-${JAVA_VERSION}-oracle" "$JAVA_HOME" && \
-    ln -s "$JAVA_HOME/bin/"* "/usr/bin/" && \
-    rm -rf "$JAVA_HOME/"*src.zip && \
-    rm -rf "$JAVA_HOME/lib/missioncontrol" \
-           "$JAVA_HOME/lib/visualvm" \
-           "$JAVA_HOME/lib/"*javafx* \
-           "$JAVA_HOME/jre/lib/plugin.jar" \
-           "$JAVA_HOME/jre/lib/ext/jfxrt.jar" \
-           "$JAVA_HOME/jre/bin/javaws" \
-           "$JAVA_HOME/jre/lib/javaws.jar" \
-           "$JAVA_HOME/jre/lib/desktop" \
-           "$JAVA_HOME/jre/plugin" \
-           "$JAVA_HOME/jre/lib/"deploy* \
-           "$JAVA_HOME/jre/lib/"*javafx* \
-           "$JAVA_HOME/jre/lib/"*jfx* \
-           "$JAVA_HOME/jre/lib/amd64/libdecora_sse.so" \
-           "$JAVA_HOME/jre/lib/amd64/"libprism_*.so \
-           "$JAVA_HOME/jre/lib/amd64/libfxplugins.so" \
-           "$JAVA_HOME/jre/lib/amd64/libglass.so" \
-           "$JAVA_HOME/jre/lib/amd64/libgstreamer-lite.so" \
-           "$JAVA_HOME/jre/lib/amd64/"libjavafx*.so \
-           "$JAVA_HOME/jre/lib/amd64/"libjfx*.so && \
-    rm -rf "$JAVA_HOME/jre/bin/jjs" \
-           "$JAVA_HOME/jre/bin/keytool" \
-           "$JAVA_HOME/jre/bin/orbd" \
-           "$JAVA_HOME/jre/bin/pack200" \
-           "$JAVA_HOME/jre/bin/policytool" \
-           "$JAVA_HOME/jre/bin/rmid" \
-           "$JAVA_HOME/jre/bin/rmiregistry" \
-           "$JAVA_HOME/jre/bin/servertool" \
-           "$JAVA_HOME/jre/bin/tnameserv" \
-           "$JAVA_HOME/jre/bin/unpack200" \
-           "$JAVA_HOME/jre/lib/ext/nashorn.jar" \
-           "$JAVA_HOME/jre/lib/jfr.jar" \
-           "$JAVA_HOME/jre/lib/jfr" \
-           "$JAVA_HOME/jre/lib/oblique-fonts" && \
-    wget --header "Cookie: oraclelicense=accept-securebackup-cookie;" \
-        "http://download.oracle.com/otn-pub/java/jce/${JAVA_VERSION}/jce_policy-${JAVA_VERSION}.zip" && \
-    unzip -jo -d "${JAVA_HOME}/jre/lib/security" "jce_policy-${JAVA_VERSION}.zip" && \
-    rm "${JAVA_HOME}/jre/lib/security/README.txt" && \
-    apk del build-dependencies && \
-    rm "/tmp/"* && \
-    \
-    echo 'public class Main { public static void main(String[] args) { System.out.println("Java code is running fine!"); } }' > Main.java && \
-    javac Main.java && \
-    java Main && \
-    rm -r "/tmp/"*
+RUN addgroup -g 1000 node \
+    && adduser -u 1000 -G node -s /bin/sh -D node \
+    && apk add --no-cache \
+        libstdc++ \
+    && apk add --no-cache --virtual .build-deps \
+        binutils-gold \
+        curl \
+        g++ \
+        gcc \
+        gnupg \
+        libgcc \
+        linux-headers \
+        make \
+        python \
+  # gpg keys listed at https://github.com/nodejs/node#release-keys
+  && for key in \
+    94AE36675C464D64BAFA68DD7434390BDBE9B9C5 \
+    FD3A5288F042B6850C66B31F09FE44734EB7990E \
+    71DCFD284A79C3B38668286BC97EC7A07EDE3FC1 \
+    DD8F2338BAE7501E3DD5AC78C273792F7D83545D \
+    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
+    B9AE9905FFD7803F25714661B63B535A4C206CA9 \
+    77984A986EBC2AA786BC0F66B01FBB92821C587A \
+    8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600 \
+    4ED778F539E3634C779C87C6D7062848A1AB005C \
+    A48C2BEE680E841632CD4E44F07496B3EB3C1762 \
+    B9E2F5981AA6E0CD28160D9FF13993A75599653C \
+  ; do \
+    gpg --batch --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys "$key" || \
+    gpg --batch --keyserver hkp://ipv4.pool.sks-keyservers.net --recv-keys "$key" || \
+    gpg --batch --keyserver hkp://pgp.mit.edu:80 --recv-keys "$key" ; \
+  done \
+    && curl -fsSLO --compressed "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION.tar.xz" \
+    && curl -fsSLO --compressed "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc" \
+    && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
+    && grep " node-v$NODE_VERSION.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
+    && tar -xf "node-v$NODE_VERSION.tar.xz" \
+    && cd "node-v$NODE_VERSION" \
+    && ./configure \
+    && make -j$(getconf _NPROCESSORS_ONLN) \
+    && make install \
+    && apk del .build-deps \
+    && cd .. \
+    && rm -Rf "node-v$NODE_VERSION" \
+    && rm "node-v$NODE_VERSION.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt
+
+ENV YARN_VERSION 1.13.0
+
+RUN apk add --no-cache --virtual .build-deps-yarn curl gnupg tar \
+  && for key in \
+    6A010C5166006599AA17F08146C2130DFD2497F5 \
+  ; do \
+    gpg --batch --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys "$key" || \
+    gpg --batch --keyserver hkp://ipv4.pool.sks-keyservers.net --recv-keys "$key" || \
+    gpg --batch --keyserver hkp://pgp.mit.edu:80 --recv-keys "$key" ; \
+  done \
+  && curl -fsSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz" \
+  && curl -fsSLO --compressed "https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc" \
+  && gpg --batch --verify yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz \
+  && mkdir -p /opt \
+  && tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/ \
+  && ln -s /opt/yarn-v$YARN_VERSION/bin/yarn /usr/local/bin/yarn \
+  && ln -s /opt/yarn-v$YARN_VERSION/bin/yarnpkg /usr/local/bin/yarnpkg \
+  && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz \
+  && apk del .build-deps-yarn
