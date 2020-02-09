@@ -1,1 +1,0 @@
-# Docker image with both Node and JDK
