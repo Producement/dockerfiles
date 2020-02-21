@@ -1,0 +1,1 @@
+# awslogs CLI Docker image
