@@ -13,8 +13,14 @@ RUN apt install brave-browser -y
 
 RUN service dbus start
 
+RUN apt install libnss3-tools
+
 RUN useradd -m brave
 
 USER brave
+WORKDIR /home/brave
+
+RUN mkdir -p .pki/nssdb
+RUN certutil -N -d .pki/nssdb --empty-password
 
 CMD ["brave-browser"]
