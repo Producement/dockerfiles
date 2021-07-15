@@ -1,3 +1,7 @@
 #!/bin/bash
 
-docker run -e AWS_PROFILE=$AWS_PROFILE -e AWS_REGION=$AWS_REGION -v `pwd`:/app -v $HOME/.aws/:/root/.aws --rm -i maidok/awscli:ssm-latest "$@"
+if [[ -z "${AWS_PROFILE}" ]]; then
+	exec docker run --net=host -v ~/.aws:/root/.aws -v $(pwd):/aws --rm -i maidok/awscli:ssm-latest "$@"
+else
+	exec docker run --net=host -e AWS_PROFILE -v ~/.aws:/root/.aws -v $(pwd):/aws --rm -i maidok/awscli:ssm-latest "$@"
+fi

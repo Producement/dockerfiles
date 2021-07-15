@@ -1,11 +1,11 @@
-FROM golang:1.13
+FROM golang:1.16
 
 RUN mkdir -p $GOPATH/src/github.com/versent/saml2aws
 RUN git clone https://github.com/v3rm0n/saml2aws.git $GOPATH/src/github.com/versent/saml2aws
 
 WORKDIR $GOPATH/src/github.com/versent/saml2aws
 
-RUN git checkout google-form-fix
+RUN git checkout google-2fa-fix
 
 RUN make mod && make install
 

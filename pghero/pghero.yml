@@ -1,9 +1,0 @@
-databases:
-  main:
-    url: <%= ENV["DATABASE_URL"] %>
-  demo:
-    url: <%= ENV["DEMO_DATABASE_URL"] %>
-  read:
-    url: <%= ENV["READ_DATABASE_URL"] %>
-  staging:
-    url: <%= ENV["STAGING_DATABASE_URL"] %>
